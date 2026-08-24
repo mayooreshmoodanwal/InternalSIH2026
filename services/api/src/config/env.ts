@@ -45,6 +45,7 @@ const envSchema = z.object({
 
   // Email
   RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
   // Gmail SMTP fallback (use App Password from https://myaccount.google.com/apppasswords)
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
