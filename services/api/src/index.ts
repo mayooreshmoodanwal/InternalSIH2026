@@ -124,7 +124,7 @@ async function bootstrap(): Promise<void> {
     initWebSocket(httpServer);
 
     // Start HTTP server
-    httpServer.listen(env.PORT, () => {
+    httpServer.listen(env.PORT, '0.0.0.0', () => {
       logger.info(`
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║

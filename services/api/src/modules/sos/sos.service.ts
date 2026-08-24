@@ -55,13 +55,17 @@ export async function triggerSOS(userId: string, input: SOSTriggerInput) {
 // ─── Step 2: SMS Fallback Webhook ───────────────────────
 
 export async function processSMSWebhook(from: string, body: string) {
-  // Store raw inbound for audit
-  await SMSInboundRaw.create({
-    from,
-    bodyEncrypted: body,
-    receivedAt: new Date(),
-    parsed: false,
-  });
+  // Store raw inbound for audit (non-blocking, safe if Mongo is offline)
+  try {
+    await SMSInboundRaw.create({
+      from,
+      bodyEncrypted: body,
+      receivedAt: new Date(),
+      parsed: false,
+    });
+  } catch (mongoErr) {
+    logger.debug('MongoDB raw logging skipped:', mongoErr);
+  }
 
   // Lookup user by phone number
   const user = await prisma.user.findFirst({
@@ -72,10 +76,12 @@ export async function processSMSWebhook(from: string, body: string) {
   if (!user || !user.userKeys) {
     logger.warn(`SMS SOS from unknown/unregistered number: ${from}`);
     // Store for manual review but don't create alert from unverified sender
-    await SMSInboundRaw.updateOne(
-      { from, parsed: false },
-      { $set: { parseError: 'Unknown sender', parsed: true } }
-    );
+    try {
+      await SMSInboundRaw.updateOne(
+        { from, parsed: false },
+        { $set: { parseError: 'Unknown sender', parsed: true } }
+      );
+    } catch {}
     return { processed: false, reason: 'unknown_sender' };
   }
 
@@ -84,10 +90,12 @@ export async function processSMSWebhook(from: string, body: string) {
 
   if (!decrypted) {
     logger.warn(`SMS SOS decryption failed for ${from} — possible tampering`);
-    await SMSInboundRaw.updateOne(
-      { from, parsed: false },
-      { $set: { parseError: 'Decryption failed', parsed: true } }
-    );
+    try {
+      await SMSInboundRaw.updateOne(
+        { from, parsed: false },
+        { $set: { parseError: 'Decryption failed', parsed: true } }
+      );
+    } catch {}
     return { processed: false, reason: 'decryption_failed' };
   }
 
@@ -112,10 +120,12 @@ export async function processSMSWebhook(from: string, body: string) {
   });
 
   // Update raw record
-  await SMSInboundRaw.updateOne(
-    { from, parsed: false },
-    { $set: { bodyDecrypted: decrypted, parsed: true, alertCreated: true } }
-  );
+  try {
+    await SMSInboundRaw.updateOne(
+      { from, parsed: false },
+      { $set: { bodyDecrypted: decrypted, parsed: true, alertCreated: true } }
+    );
+  } catch {}
 
   // Emit to dashboard
   await emitSOSAlert(alert);
@@ -136,14 +146,16 @@ export async function processBLERelay(relayUserId: string, input: BLERelayInput)
   const results = [];
 
   for (const beacon of input.beacons) {
-    // Store raw beacon for audit
-    await BLEInboundRaw.create({
-      relayUserId,
-      beaconPayload: beacon.payload,
-      rssi: beacon.rssi || null,
-      receivedAt: new Date(beacon.receivedAt),
-      parsed: false,
-    });
+    // Store raw beacon for audit (non-blocking)
+    try {
+      await BLEInboundRaw.create({
+        relayUserId,
+        beaconPayload: beacon.payload,
+        rssi: beacon.rssi || null,
+        receivedAt: new Date(beacon.receivedAt),
+        parsed: false,
+      });
+    } catch {}
 
     // Try to decrypt — we need to identify which user's key to use
     // The beacon contains a userId hash in the first 8 bytes
@@ -215,10 +227,12 @@ export async function processBLERelay(relayUserId: string, input: BLERelayInput)
     });
 
     // Update raw record
-    await BLEInboundRaw.updateOne(
-      { relayUserId, beaconPayload: beacon.payload, parsed: false },
-      { $set: { userIdHash, parsed: true, alertCreated: true } }
-    );
+    try {
+      await BLEInboundRaw.updateOne(
+        { relayUserId, beaconPayload: beacon.payload, parsed: false },
+        { $set: { userIdHash, parsed: true, alertCreated: true } }
+      );
+    } catch {}
 
     // Emit and notify
     await emitSOSAlert(alert);

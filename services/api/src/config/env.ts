@@ -11,7 +11,7 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().default('postgresql://vana:vana_dev@localhost:5432/vana_dev?schema=public'),
-  MONGODB_URI: z.string().default('mongodb://localhost:27017/vana_dev'),
+  MONGODB_URI: z.string().optional(),
   REDIS_URL: z.string().default('redis://localhost:6379'),
 
   // JWT

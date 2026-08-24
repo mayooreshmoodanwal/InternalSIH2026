@@ -2,13 +2,26 @@ import mongoose from 'mongoose';
 import { env } from './env.js';
 import { logger } from '../utils/logger.js';
 
+let isConnected = false;
+
+export function isMongoDBConnected(): boolean {
+  return isConnected && mongoose.connection.readyState === 1;
+}
+
 export async function connectMongoDB(): Promise<void> {
+  if (!env.MONGODB_URI) {
+    logger.warn('⚠️ MONGODB_URI not configured — running without MongoDB raw telemetry logs');
+    return;
+  }
   try {
-    await mongoose.connect(env.MONGODB_URI);
+    await mongoose.connect(env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    isConnected = true;
     logger.info('✅ MongoDB connected');
-  } catch (error) {
-    logger.error('❌ MongoDB connection failed:', error);
-    process.exit(1);
+  } catch (error: any) {
+    isConnected = false;
+    logger.warn(`⚠️ MongoDB connection failed (${error?.message || 'timeout/refused'}) — continuing without raw telemetry logs`);
   }
 }
 
