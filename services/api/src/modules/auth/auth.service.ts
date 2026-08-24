@@ -71,7 +71,8 @@ export async function registerUser(input: RegisterInput) {
     JSON.stringify({ otpHash, userId: user.id, attempts: 0 })
   );
 
-  // Dispatch real SMS or Email OTP
+  // Dispatch real SMS OTP (Temporarily commented out)
+  /*
   if (input.phone) {
     await sendSMS({
       to: input.phone,
@@ -79,6 +80,7 @@ export async function registerUser(input: RegisterInput) {
       otp,
     });
   }
+  */
 
   if (input.email) {
     await sendEmail({

@@ -220,7 +220,8 @@ router.post(
   })
 );
 
-// POST /auth/send-phone-otp — Dispatch real SMS OTP via MSG91 / Twilio
+/*
+// POST /auth/send-phone-otp — Dispatch real SMS OTP via MSG91 / Twilio (Temporarily commented out)
 router.post(
   '/send-phone-otp',
   asyncHandler(async (req, res) => {
@@ -242,6 +243,7 @@ router.post(
     sendSuccess(res, { sent: true, provider: smsResult.provider, messageId: smsResult.messageId });
   })
 );
+*/
 
 // POST /auth/register-full-authority — Complete authority registration
 router.post(

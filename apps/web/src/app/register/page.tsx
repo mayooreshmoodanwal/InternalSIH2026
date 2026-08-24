@@ -70,7 +70,7 @@ export default function RegisterPage() {
     }
   };
 
-  // ─── Step 2 Submit: Verify Email OTP & Send Phone SMS ──────
+  // ─── Step 2 Submit: Verify Email OTP & Proceed to Profile ──
   const handleVerifyEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (emailOtp.length !== 6) {
@@ -81,7 +81,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Step A: Verify Email OTP against backend
+      // Verify Email OTP against backend
       const verifyRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/auth/verify-otp`,
         {
@@ -97,26 +97,18 @@ export default function RegisterPage() {
         return;
       }
 
-      // Step B: Dispatch Phone OTP
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/auth/send-phone-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone }),
-        }
-      );
-      setSuccessMsg(`✓ Email verified! SMS code dispatched to ${phone}.`);
-      setStep("phone_otp");
+      setSuccessMsg("✓ Email verified successfully! Please complete your profile details.");
+      setStep("role_details");
     } catch {
-      setSuccessMsg(`✓ SMS code dispatched to ${phone}.`);
-      setStep("phone_otp");
+      setSuccessMsg("✓ Email verified! Please complete your profile details.");
+      setStep("role_details");
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── Step 3 Submit: Verify Phone OTP ───────────────────────
+  /*
+  // ─── Step 3 Submit: Verify Phone OTP (Temporarily commented out) ───────
   const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneOtp.length !== 6) {
@@ -149,6 +141,7 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
+  */
 
   // ─── Step 4A: Complete Authority Registration ─────────────
   const handleCompleteAuthority = async (e: React.FormEvent) => {
@@ -385,7 +378,7 @@ export default function RegisterPage() {
                   cursor: loading ? "wait" : "pointer", marginTop: "8px",
                 }}
               >
-                {loading ? "Dispatching Email Verification..." : "Verify Email & Mobile →"}
+                {loading ? "Dispatching Email Verification..." : "Verify Email & Proceed →"}
               </button>
             </form>
           )}
@@ -424,15 +417,16 @@ export default function RegisterPage() {
                 style={{
                   padding: "12px", borderRadius: "var(--radius-md)",
                   background: "var(--gov-blue)", color: "white", border: "none",
-                  fontSize: "14px", fontWeight: "700", cursor: "pointer",
+                  fontSize: "14px", fontWeight: "700", cursor: loading ? "wait" : "pointer",
                 }}
               >
-                {loading ? "Sending SMS OTP..." : "Verify Email & Send Mobile SMS →"}
+                {loading ? "Verifying Code..." : "Verify Email & Proceed →"}
               </button>
             </form>
           )}
 
-          {/* ─── Step 3: Phone SMS OTP Verification ──────────── */}
+          {/* ─── Step 3: Phone SMS OTP Verification (Temporarily commented out) ─── */}
+          {/*
           {step === "phone_otp" && (
             <form onSubmit={handleVerifyPhoneOtp} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ textAlign: "center" }}>
@@ -472,6 +466,7 @@ export default function RegisterPage() {
               </button>
             </form>
           )}
+          */}
 
           {/* ─── Step 4A: Authority Profile Details Form ─────── */}
           {step === "role_details" && accountType === "authority" && (
