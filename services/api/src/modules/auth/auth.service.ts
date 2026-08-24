@@ -105,8 +105,18 @@ export async function registerUser(input: RegisterInput) {
 // ─── OTP Verification ───────────────────────────────────
 
 export async function verifyOTP(identifier: string, otp: string) {
-  const key = `otp:verify:${identifier}`;
-  const stored = await redis.get(key);
+  let key = `otp:verify:${identifier}`;
+  let stored = await redis.get(key);
+
+  if (!stored) {
+    key = `otp:email:${identifier}`;
+    stored = await redis.get(key);
+  }
+
+  if (!stored) {
+    key = `otp:phone:${identifier}`;
+    stored = await redis.get(key);
+  }
 
   if (!stored) {
     throw new AppError(400, 'OTP_EXPIRED', 'OTP has expired or was not requested');
@@ -122,19 +132,21 @@ export async function verifyOTP(identifier: string, otp: string) {
 
   if (!verifyOTPHash(otp, otpHash)) {
     // Increment attempts
-    await redis.setex(key, 300, JSON.stringify({ otpHash, userId, attempts: attempts + 1 }));
-    throw new AppError(400, 'INVALID_OTP', 'Invalid OTP');
+    await redis.setex(key, 300, JSON.stringify({ otpHash, userId, attempts: (attempts || 0) + 1 }));
+    throw new AppError(400, 'INVALID_OTP', 'Invalid OTP code');
   }
 
-  // Activate user
-  await prisma.user.update({
-    where: { id: userId },
-    data: { status: 'active' },
-  });
+  // Activate user if registered with userId
+  if (userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { status: 'active' },
+    });
+  }
 
   await redis.del(key);
   
-  return { userId, verified: true };
+  return { userId: userId || null, verified: true };
 }
 
 // ─── Login ──────────────────────────────────────────────

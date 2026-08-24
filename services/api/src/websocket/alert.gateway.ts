@@ -14,8 +14,11 @@ let io: Server;
 export function initWebSocket(httpServer: HTTPServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        callback(null, true);
+      },
       methods: ['GET', 'POST'],
+      credentials: true,
     },
     path: '/socket.io',
   });

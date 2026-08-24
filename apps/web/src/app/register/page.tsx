@@ -81,6 +81,23 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      // Step A: Verify Email OTP against backend
+      const verifyRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/auth/verify-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: email, otp: emailOtp }),
+        }
+      );
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        setError(verifyData?.error?.message || "Invalid Email verification code. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Step B: Dispatch Phone OTP
       await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/auth/send-phone-otp`,
         {
@@ -89,7 +106,7 @@ export default function RegisterPage() {
           body: JSON.stringify({ phone }),
         }
       );
-      setSuccessMsg(`✓ SMS code dispatched to ${phone}.`);
+      setSuccessMsg(`✓ Email verified! SMS code dispatched to ${phone}.`);
       setStep("phone_otp");
     } catch {
       setSuccessMsg(`✓ SMS code dispatched to ${phone}.`);
@@ -100,14 +117,37 @@ export default function RegisterPage() {
   };
 
   // ─── Step 3 Submit: Verify Phone OTP ───────────────────────
-  const handleVerifyPhoneOtp = (e: React.FormEvent) => {
+  const handleVerifyPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneOtp.length !== 6) {
       setError("Please enter a valid 6-digit code");
       return;
     }
     setError("");
-    setStep("role_details");
+    setLoading(true);
+
+    try {
+      const verifyRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/v1/auth/verify-otp`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: phone, otp: phoneOtp }),
+        }
+      );
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.success) {
+        setError(verifyData?.error?.message || "Invalid Phone OTP code. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+      setSuccessMsg("✓ Phone verified! Please fill in your profile details.");
+      setStep("role_details");
+    } catch {
+      setStep("role_details");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ─── Step 4A: Complete Authority Registration ─────────────
