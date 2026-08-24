@@ -1,0 +1,327 @@
+@import "tailwindcss";
+
+:root {
+  /* V.A.N.A Design System — Government of India & Ministry Standard (Dark Theme default) */
+  --bg-primary: #0a0f1d;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1e293b;
+  --bg-card: #151d30;
+  --bg-card-hover: #1c2742;
+  --bg-glass: rgba(21, 29, 48, 0.75);
+  
+  --gov-blue-dark: #0a192f;
+  --gov-blue: #1e3a8a;
+  --gov-blue-light: #3b82f6;
+  --gov-saffron: #f97316;
+  --gov-green: #10b981;
+  --gov-gold: #fbbf24;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-heading: #ffffff;
+  
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-gradient: linear-gradient(135deg, #2563eb, #7c3aed);
+  --saffron-gradient: linear-gradient(135deg, #f97316, #ea580c);
+  --green-gradient: linear-gradient(135deg, #10b981, #059669);
+  
+  --danger: #ef4444;
+  --danger-glow: rgba(239, 68, 68, 0.4);
+  --warning: #f59e0b;
+  --success: #10b981;
+  --info: #0ea5e9;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(59, 130, 246, 0.5);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.5);
+  --shadow-glow-blue: 0 0 24px rgba(59, 130, 246, 0.3);
+  --shadow-glow-red: 0 0 30px rgba(239, 68, 68, 0.5);
+  
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* Light Theme — Exact Government of India / UIDAI Palette */
+[data-theme="light"] {
+  --bg-primary: #f4f6fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edf2f7;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  
+  --gov-blue-dark: #0f1e36;
+  --gov-blue: #1e3a8a;
+  --gov-blue-light: #2563eb;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-heading: #091224;
+  
+  --border-subtle: rgba(15, 23, 42, 0.1);
+  --border-active: rgba(37, 99, 235, 0.6);
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.12);
+  --shadow-glow-blue: 0 4px 20px rgba(37, 99, 235, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ─── Top Tricolor Accent Stripe ─────────────────────── */
+.tricolor-stripe {
+  height: 4px;
+  background: linear-gradient(90deg, #ff9933 0%, #ff9933 33.33%, #ffffff 33.33%, #ffffff 66.66%, #138808 66.66%, #138808 100%);
+  width: 100%;
+}
+
+/* ─── Glassmorphism & Surface Cards ──────────────────── */
+.gov-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.gov-card:hover {
+  border-color: var(--border-active);
+  box-shadow: var(--shadow-md);
+}
+
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Ticker Marquee ─────────────────────────────────── */
+@keyframes tickerMove {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: tickerMove 35s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* ─── SOS Button ─────────────────────────────────────── */
+.sos-button {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ff3333, #cc0000);
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  transition: transform 0.1s ease, box-shadow 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.sos-button::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.3), transparent 70%);
+  animation: sosPulse 2s ease-in-out infinite;
+  z-index: -1;
+}
+
+.sos-button:active {
+  transform: scale(0.95);
+}
+
+.sos-button.holding {
+  box-shadow: var(--shadow-glow-red), 0 0 60px rgba(255, 0, 0, 0.6);
+  animation: sosHold 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes sosPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+
+@keyframes sosHold {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* ─── BLE Beacon Wave Animation ──────────────────────── */
+.ble-active {
+  position: relative;
+}
+
+.ble-active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-primary);
+  transform: translate(-50%, -50%);
+  animation: bleWave 2s ease-out infinite;
+}
+
+@keyframes bleWave {
+  0% { width: 60px; height: 60px; opacity: 1; }
+  100% { width: 200px; height: 200px; opacity: 0; }
+}
+
+/* ─── Status Indicator ───────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.warning { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+.status-dot.danger { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+.status-dot.info { background: var(--info); box-shadow: 0 0 6px var(--info); }
+
+/* ─── Alert Pulse ────────────────────────────────────── */
+.alert-pulse {
+  animation: alertPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes alertPulse {
+  0%, 100% { border-color: var(--danger); }
+  50% { border-color: rgba(239, 68, 68, 0.3); }
+}
+
+/* ─── Cascade Step ───────────────────────────────────── */
+.cascade-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  transition: all 0.3s ease;
+}
+
+.cascade-step.active {
+  border-color: var(--accent-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.cascade-step.success {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.cascade-step.failed {
+  border-color: var(--danger);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.cascade-step.pending {
+  opacity: 0.5;
+}
+
+/* ─── Loading Spinner ────────────────────────────────── */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Floating Ask VANA Bot ──────────────────────────── */
+.ask-vana-badge {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 2px solid var(--gov-saffron);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(249, 115, 22, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.ask-vana-badge:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: var(--shadow-lg), 0 0 30px rgba(249, 115, 22, 0.5);
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────── */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

@@ -1,0 +1,382 @@
+// V.A.N.A (Vigilant Assistance for NER Areas) — PostgreSQL + PostGIS Schema
+// Smart Tourist Safety Web Portal — SIH25002
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum UserRole {
+  tourist
+  authority
+  admin
+}
+
+enum UserStatus {
+  pending
+  active
+  suspended
+}
+
+enum TripStatus {
+  planned
+  active
+  completed
+  cancelled
+}
+
+enum RiskTier {
+  advisory
+  restricted
+  high_risk
+}
+
+enum PermitStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum SOSTriggerType {
+  online
+  sms_fallback
+  ble_relay
+  geofence_escalation
+}
+
+enum SOSSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum SOSStatus {
+  new_alert
+  acknowledged
+  in_progress
+  resolved
+}
+
+enum ScamReportStatus {
+  open
+  reviewed
+}
+
+enum AuthorityAppStatus {
+  pending
+  approved
+  rejected
+}
+
+// ─── Users ──────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String?    @unique
+  phone        String?    @unique
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(tourist)
+  status       UserStatus @default(pending)
+  digitalIdRef String?    @map("digital_id_ref")
+  mfaSecret    String?    @map("mfa_secret") // TOTP secret, encrypted
+  mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  authorityProfile   AuthorityProfile?
+  trips              Trip[]
+  emergencyContacts  EmergencyContact[]
+  sosAlerts          SOSAlert[]           @relation("AlertUser")
+  assignedAlerts     SOSAlert[]           @relation("AssignedAuthority")
+  permits            Permit[]
+  scamReports        ScamReport[]
+  auditLogsAsActor   AuditLog[]           @relation("AuditActor")
+  userKeys           UserKey?
+  sessions           Session[]
+  authorityApps      AuthorityApplication[] @relation("Applicant")
+  reviewedApps       AuthorityApplication[] @relation("Reviewer")
+  createdZones       DangerZone[]          @relation("ZoneCreator")
+  approvedZones      DangerZone[]          @relation("ZoneApprover")
+
+  @@map("users")
+}
+
+model Session {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  refreshTokenHash String  @map("refresh_token_hash")
+  deviceInfo      String?  @map("device_info")
+  ipAddress       String?  @map("ip_address")
+  expiresAt       DateTime @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model UserKey {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  publicKey      String   @map("public_key")       // X25519 public key (Base64)
+  sharedSecret   String   @map("shared_secret")    // Derived shared secret, encrypted at rest
+  createdAt      DateTime @default(now()) @map("created_at")
+  rotatedAt      DateTime? @map("rotated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_keys")
+}
+
+// ─── Authority ──────────────────────────────────────────
+
+model AuthorityProfile {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @unique @map("user_id") @db.Uuid
+  department         String
+  jurisdictionZoneId String?   @map("jurisdiction_zone_id") @db.Uuid
+  verificationDocRef String?   @map("verification_doc_ref")
+  verifiedByAdminId  String?   @map("verified_by_admin_id") @db.Uuid
+  verifiedAt         DateTime? @map("verified_at")
+
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jurisdictionZone DangerZone? @relation(fields: [jurisdictionZoneId], references: [id])
+
+  @@map("authority_profiles")
+}
+
+model AuthorityApplication {
+  id              String              @id @default(uuid()) @db.Uuid
+  applicantId     String              @map("applicant_id") @db.Uuid
+  department      String
+  officialEmail   String              @map("official_email")
+  jurisdictionDesc String             @map("jurisdiction_desc")
+  documentRef     String?             @map("document_ref")
+  status          AuthorityAppStatus  @default(pending)
+  reviewedById    String?             @map("reviewed_by_id") @db.Uuid
+  reviewNote      String?             @map("review_note")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  reviewedAt      DateTime?           @map("reviewed_at")
+
+  applicant  User  @relation("Applicant", fields: [applicantId], references: [id])
+  reviewedBy User? @relation("Reviewer", fields: [reviewedById], references: [id])
+
+  @@map("authority_applications")
+}
+
+// ─── Trips ──────────────────────────────────────────────
+
+model Trip {
+  id            String     @id @default(uuid()) @db.Uuid
+  userId        String     @map("user_id") @db.Uuid
+  destination   String
+  startDate     DateTime   @map("start_date") @db.Date
+  endDate       DateTime   @map("end_date") @db.Date
+  transportMode String     @map("transport_mode")
+  status        TripStatus @default(planned)
+  aiSummaryRef  String?    @map("ai_summary_ref")  // Reference to MongoDB ai_response_cache
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sosAlerts SOSAlert[]
+  permits   Permit[]
+
+  @@map("trips")
+}
+
+// ─── Emergency Contacts ─────────────────────────────────
+
+model EmergencyContact {
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @map("user_id") @db.Uuid
+  name         String
+  phone        String
+  email        String?
+  relationship String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+// ─── Danger Zones ───────────────────────────────────────
+
+model DangerZone {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  // PostGIS polygon stored as GeoJSON text — actual geospatial queries use raw SQL
+  polygonGeoJson String  @map("polygon_geojson") @db.Text
+  riskTier    RiskTier @map("risk_tier")
+  active      Boolean  @default(false)
+  state       String?  // e.g., "Meghalaya", "Sikkim"
+  createdById String   @map("created_by_id") @db.Uuid
+  approvedById String? @map("approved_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy  User   @relation("ZoneCreator", fields: [createdById], references: [id])
+  approvedBy User?  @relation("ZoneApprover", fields: [approvedById], references: [id])
+  permits    Permit[]
+  authorityProfiles AuthorityProfile[]
+
+  @@map("danger_zones")
+}
+
+// ─── Dead Zones (No/Low Network Areas) ──────────────────
+
+model DeadZone {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  polygonGeoJson String   @map("polygon_geojson") @db.Text
+  signalType     String   @map("signal_type") // "no_signal", "low_signal", "intermittent"
+  state          String?
+  source         String?  // "manual", "auto_detected", "crowdsourced"
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("dead_zones")
+}
+
+// ─── Permits ────────────────────────────────────────────
+
+model Permit {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  zoneId      String       @map("zone_id") @db.Uuid
+  tripId      String?      @map("trip_id") @db.Uuid
+  validFrom   DateTime     @map("valid_from")
+  validTo     DateTime     @map("valid_to")
+  partySize   Int          @default(1) @map("party_size")
+  status      PermitStatus @default(pending)
+  approvedById String?     @map("approved_by_id") @db.Uuid
+  reviewNote  String?      @map("review_note")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  zone DangerZone @relation(fields: [zoneId], references: [id])
+  trip Trip?      @relation(fields: [tripId], references: [id])
+
+  @@map("permits")
+}
+
+// ─── SOS Alerts ─────────────────────────────────────────
+
+model SOSAlert {
+  id                String         @id @default(uuid()) @db.Uuid
+  userId            String         @map("user_id") @db.Uuid
+  tripId            String?        @map("trip_id") @db.Uuid
+  triggerType        SOSTriggerType @map("trigger_type")
+  latitude          Float
+  longitude         Float
+  accuracy          Float?
+  batteryLevel      Int?           @map("battery_level")
+  severity          SOSSeverity    @default(critical)
+  status            SOSStatus      @default(new_alert)
+  identityRevealed  Boolean        @default(false) @map("identity_revealed")
+  assignedAuthorityId String?      @map("assigned_authority_id") @db.Uuid
+  relayDeviceInfo   String?        @map("relay_device_info") // For BLE relay: masked relay device info
+  createdAt         DateTime       @default(now()) @map("created_at")
+  acknowledgedAt    DateTime?      @map("acknowledged_at")
+  resolvedAt        DateTime?      @map("resolved_at")
+
+  user              User  @relation("AlertUser", fields: [userId], references: [id])
+  assignedAuthority User? @relation("AssignedAuthority", fields: [assignedAuthorityId], references: [id])
+  trip              Trip? @relation(fields: [tripId], references: [id])
+
+  @@map("sos_alerts")
+}
+
+// ─── Audit Logs (Append-Only) ───────────────────────────
+
+model AuditLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorId       String   @map("actor_id") @db.Uuid
+  action        String   // identity_reveal, zone_edit, alert_status_change, user_suspend, etc.
+  targetType    String   @map("target_type") // user, sos_alert, danger_zone, permit
+  targetId      String   @map("target_id") @db.Uuid
+  justification String?
+  metadata      String?  @db.Text // JSON string of additional context
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  actor User @relation("AuditActor", fields: [actorId], references: [id])
+
+  // NO updatedAt — this table is append-only
+  @@map("audit_logs")
+}
+
+// ─── Fares & Utilities Cache ────────────────────────────
+
+model FaresCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  destination String
+  category    String   // taxi_km, auto_km, bus_ticket, etc.
+  value       Float
+  currency    String   @default("INR")
+  source      String   // Numbeo, ONDC, manual
+  refreshedAt DateTime @map("refreshed_at")
+
+  @@unique([destination, category])
+  @@map("fares_cache")
+}
+
+model UtilitiesCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  destination String
+  category    String   // bottled_water, basic_meal, local_sim, etc.
+  value       Float
+  currency    String   @default("INR")
+  source      String
+  refreshedAt DateTime @map("refreshed_at")
+
+  @@unique([destination, category])
+  @@map("utilities_cache")
+}
+
+// ─── Scam Reports ───────────────────────────────────────
+
+model ScamReport {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @map("user_id") @db.Uuid
+  category      String           // transport, food, accommodation, other
+  amountCharged Float            @map("amount_charged")
+  expectedAmount Float?          @map("expected_amount")
+  description   String?
+  latitude      Float?
+  longitude     Float?
+  locationDesc  String?          @map("location_desc")
+  status        ScamReportStatus @default(open)
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("scam_reports")
+}
+
+// ─── BLE Beacon Log (Deduplication) ─────────────────────
+
+model BLEBeaconLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  userIdHash     String   @map("user_id_hash") // Truncated hash from beacon
+  timestampDelta Int      @map("timestamp_delta")
+  relayUserId    String?  @map("relay_user_id") @db.Uuid
+  processedAt    DateTime @default(now()) @map("processed_at")
+  alertCreated   Boolean  @default(false) @map("alert_created")
+
+  @@unique([userIdHash, timestampDelta])
+  @@map("ble_beacon_log")
+}

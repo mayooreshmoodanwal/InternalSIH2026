@@ -1,0 +1,20 @@
+{
+  "name": "vana",
+  "version": "0.1.0",
+  "private": true,
+  "description": "V.A.N.A (Vigilant Assistance for NER Areas) — Smart Tourist Safety Web Portal (SIH25002)",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  }
+}
