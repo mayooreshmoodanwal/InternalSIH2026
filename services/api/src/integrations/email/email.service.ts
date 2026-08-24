@@ -84,11 +84,13 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     }
   }
 
-  // ─── 3. Development fallback — log OTP to server console ──────────────────
+  // ─── 3. Development / Sandbox fallback — prominent server log ───────────
   logger.info(`\n${'═'.repeat(60)}`);
-  logger.info(`📧 [DEV EMAIL] TO: ${options.to}`);
+  logger.info(`📧 [EMAIL OTP DISPATCHED]`);
+  logger.info(`   To: ${options.to}`);
   logger.info(`   Subject: "${options.subject}"`);
-  logger.info(`   Body preview: ${(options.text || 'see HTML').slice(0, 120)}`);
+  logger.info(`   Preview: ${options.text || options.html}`);
+  logger.info(`   👉 Note: To deliver real emails to any address, configure SMTP_USER & SMTP_PASS in Render environment.`);
   logger.info(`${'═'.repeat(60)}\n`);
 
   return {
